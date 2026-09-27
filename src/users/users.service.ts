@@ -12,7 +12,7 @@ import { Prisma } from '../generated/prisma/client.js';
 export class UsersService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private handleError(e: unknown, id: string): never {
+  private handleError(e: unknown, id?: string): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === 'P2025') throw new NotFoundException(`User not found`);
       if (e.code === 'P2002')
