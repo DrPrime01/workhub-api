@@ -8,6 +8,7 @@ import { CreateUserDto } from './dto/create-user-dto.js';
 import { UpdateUserDto } from './dto/update-user-dto.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { paginate } from '../common/helper.js';
+import { USER_SORT_FIELDS } from './dto/user-list-query.dto.js';
 
 @Injectable()
 export class UsersService {
@@ -22,10 +23,15 @@ export class UsersService {
     throw e;
   }
 
-  async getAll(page: number, limit: number) {
+  async getAll(
+    page: number,
+    limit: number,
+    sortBy: (typeof USER_SORT_FIELDS)[number],
+    order: Prisma.SortOrder,
+  ) {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),

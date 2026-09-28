@@ -13,8 +13,8 @@ import {
 } from '@nestjs/common';
 import { TasksService } from './tasks.service.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
+import { CommentListQueryDto } from './dto/comment-list-query.dto.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
 @Controller('tasks')
 export class TasksController {
@@ -50,8 +50,8 @@ export class TasksController {
   @Get(':taskId/comments')
   getComments(
     @Param('taskId', ParseUUIDPipe) taskId: string,
-    @Query() { page, limit }: PaginationQueryDto,
+    @Query() { page, limit, sortBy, order }: CommentListQueryDto,
   ) {
-    return this.tasksService.getComments(taskId, page, limit);
+    return this.tasksService.getComments(taskId, page, limit, sortBy, order);
   }
 }

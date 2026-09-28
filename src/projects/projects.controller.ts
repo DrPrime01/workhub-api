@@ -20,7 +20,11 @@ import {
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
 import { Priority, Status } from '../generated/prisma/enums.js';
-import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
+import {
+  ProjectListQueryDto,
+  ProjectMembersListQueryDto,
+  TaskListQueryDto,
+} from './dto/project-list-query.dto.js';
 
 @Controller('projects')
 export class ProjectsController {
@@ -33,8 +37,8 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll(@Query() { page, limit }: PaginationQueryDto) {
-    return this.projectsService.findAll(page, limit);
+  findAll(@Query() { page, limit, sortBy, order }: ProjectListQueryDto) {
+    return this.projectsService.findAll(page, limit, sortBy, order);
   }
 
   @Get(':id')
@@ -61,9 +65,15 @@ export class ProjectsController {
   @Get(':projectId/members')
   listProjectMembers(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Query() { page, limit }: PaginationQueryDto,
+    @Query() { page, limit, sortBy, order }: ProjectMembersListQueryDto,
   ) {
-    return this.projectsService.listProjectMembers(projectId, page, limit);
+    return this.projectsService.listProjectMembers(
+      projectId,
+      page,
+      limit,
+      sortBy,
+      order,
+    );
   }
 
   @Post(':projectId/members')
@@ -95,7 +105,7 @@ export class ProjectsController {
   @Get(':projectId/tasks')
   getTasks(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Query() { page, limit }: PaginationQueryDto,
+    @Query() { page, limit, sortBy, order }: TaskListQueryDto,
     @Query('status', new ParseEnumPipe(Status, { optional: true }))
     status?: Status,
     @Query('priority', new ParseEnumPipe(Priority, { optional: true }))
@@ -105,6 +115,8 @@ export class ProjectsController {
       projectId,
       page,
       limit,
+      sortBy,
+      order,
       status,
       priority,
     );

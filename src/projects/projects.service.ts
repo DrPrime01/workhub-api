@@ -13,6 +13,11 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { Priority, Prisma, Status } from '../generated/prisma/client.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
 import { paginate } from '../common/helper.js';
+import {
+  PROJECT_MEMBERS_SORT_FIELDS,
+  PROJECT_SORT_FIELDS,
+  TASK_SORT_FIELDS,
+} from './dto/project-list-query.dto.js';
 
 @Injectable()
 export class ProjectsService {
@@ -48,10 +53,15 @@ export class ProjectsService {
     }
   }
 
-  async findAll(page: number, limit: number) {
+  async findAll(
+    page: number,
+    limit: number,
+    sortBy: (typeof PROJECT_SORT_FIELDS)[number],
+    order: Prisma.SortOrder,
+  ) {
     const [data, total] = await this.prisma.$transaction([
       this.prisma.project.findMany({
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
@@ -103,14 +113,25 @@ export class ProjectsService {
     }
   }
 
-  async listProjectMembers(projectId: string, page: number, limit: number) {
+  async listProjectMembers(
+    projectId: string,
+    page: number,
+    limit: number,
+    sortBy: (typeof PROJECT_MEMBERS_SORT_FIELDS)[number],
+    order: Prisma.SortOrder,
+  ) {
     await this.assertProjectExists(projectId);
 
+    const sortField =
+      sortBy === 'createdAt'
+        ? { createdAt: order }
+        : { user: { [sortBy]: order } };
     const where = { projectId };
+
     const [data, total] = await this.prisma.$transaction([
       this.prisma.projectMember.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [sortField, { userId: 'asc' }],
         include: { user: { select: { id: true, name: true, email: true } } },
         skip: (page - 1) * limit,
         take: limit,
@@ -158,6 +179,8 @@ export class ProjectsService {
     projectId: string,
     page: number,
     limit: number,
+    sortBy: (typeof TASK_SORT_FIELDS)[number],
+    order: Prisma.SortOrder,
     status?: Status,
     priority?: Priority,
   ) {
@@ -169,7 +192,7 @@ export class ProjectsService {
         where,
         skip: (page - 1) * limit,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         include: {
           assignee: { select: { id: true, email: true, name: true } },
         },

@@ -8,6 +8,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
 import { paginate } from '../common/helper.js';
+import { COMMENT_SORT_FIELDS } from './dto/comment-list-query.dto.js';
 
 @Injectable()
 export class TasksService {
@@ -75,14 +76,20 @@ export class TasksService {
     return await this.prisma.comment.create({ data: { ...data, taskId } });
   }
 
-  async getComments(taskId: string, page: number, limit: number) {
+  async getComments(
+    taskId: string,
+    page: number,
+    limit: number,
+    sortBy: (typeof COMMENT_SORT_FIELDS)[number],
+    order: Prisma.SortOrder,
+  ) {
     await this.findOne(taskId);
 
     const where = { taskId };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.comment.findMany({
         where,
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         include: { author: { select: { id: true, name: true, email: true } } },
         skip: (page - 1) * limit,
         take: limit,
