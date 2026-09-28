@@ -7,7 +7,7 @@ import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
-import { paginate } from '../common/helper.js';
+import { ilike, paginate } from '../common/helper.js';
 import { COMMENT_SORT_FIELDS } from './dto/comment-list-query.dto.js';
 
 @Injectable()
@@ -82,10 +82,14 @@ export class TasksService {
     limit: number,
     sortBy: (typeof COMMENT_SORT_FIELDS)[number],
     order: Prisma.SortOrder,
+    search?: string,
   ) {
     await this.findOne(taskId);
 
-    const where = { taskId };
+    const where: Prisma.CommentWhereInput = {
+      taskId,
+      ...(search && { content: ilike(search) }),
+    };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.comment.findMany({
         where,

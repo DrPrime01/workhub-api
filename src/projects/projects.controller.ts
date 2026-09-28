@@ -37,8 +37,10 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll(@Query() { page, limit, sortBy, order }: ProjectListQueryDto) {
-    return this.projectsService.findAll(page, limit, sortBy, order);
+  findAll(
+    @Query() { page, limit, sortBy, order, search }: ProjectListQueryDto,
+  ) {
+    return this.projectsService.findAll(page, limit, sortBy, order, search);
   }
 
   @Get(':id')
@@ -65,7 +67,7 @@ export class ProjectsController {
   @Get(':projectId/members')
   listProjectMembers(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Query() { page, limit, sortBy, order }: ProjectMembersListQueryDto,
+    @Query() { page, limit, sortBy, order, search }: ProjectMembersListQueryDto,
   ) {
     return this.projectsService.listProjectMembers(
       projectId,
@@ -73,6 +75,7 @@ export class ProjectsController {
       limit,
       sortBy,
       order,
+      search,
     );
   }
 
@@ -105,7 +108,7 @@ export class ProjectsController {
   @Get(':projectId/tasks')
   getTasks(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Query() { page, limit, sortBy, order }: TaskListQueryDto,
+    @Query() { page, limit, sortBy, order, search }: TaskListQueryDto,
     @Query('status', new ParseEnumPipe(Status, { optional: true }))
     status?: Status,
     @Query('priority', new ParseEnumPipe(Priority, { optional: true }))
@@ -117,6 +120,7 @@ export class ProjectsController {
       limit,
       sortBy,
       order,
+      search,
       status,
       priority,
     );

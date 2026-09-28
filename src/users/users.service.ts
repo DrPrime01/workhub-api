@@ -7,7 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUserDto } from './dto/create-user-dto.js';
 import { UpdateUserDto } from './dto/update-user-dto.js';
 import { Prisma } from '../generated/prisma/client.js';
-import { paginate } from '../common/helper.js';
+import { ilike, paginate } from '../common/helper.js';
 import { USER_SORT_FIELDS } from './dto/user-list-query.dto.js';
 
 @Injectable()
@@ -28,14 +28,22 @@ export class UsersService {
     limit: number,
     sortBy: (typeof USER_SORT_FIELDS)[number],
     order: Prisma.SortOrder,
+    search?: string,
   ) {
+    const where: Prisma.UserWhereInput = {
+      ...(search && {
+        OR: [{ name: ilike(search) }, { email: ilike(search) }],
+      }),
+    };
+
     const [data, total] = await this.prisma.$transaction([
       this.prisma.user.findMany({
+        where,
         orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.user.count(),
+      this.prisma.user.count({ where }),
     ]);
 
     return paginate(data, total, page, limit);

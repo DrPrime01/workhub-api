@@ -21,8 +21,8 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  getAll(@Query() { page, limit, sortBy, order }: UserListQueryDto) {
-    return this.usersService.getAll(page, limit, sortBy, order);
+  getAll(@Query() { page, limit, sortBy, order, search }: UserListQueryDto) {
+    return this.usersService.getAll(page, limit, sortBy, order, search);
   }
 
   @Get(':id')

@@ -2,6 +2,7 @@ import { IntersectionType } from '@nestjs/mapped-types';
 import { PaginationQueryDto } from '../../common/dto/pagination-query.dto.js';
 import { SortQueryDto } from '../../common/dto/sort-query.dto.js';
 import { IsIn, IsOptional } from 'class-validator';
+import { SearchQueryDto } from '../../common/dto/search-query.dto.js';
 
 export const PROJECT_SORT_FIELDS = ['name', 'createdAt', 'updatedAt'] as const;
 export const PROJECT_MEMBERS_SORT_FIELDS = [
@@ -21,6 +22,7 @@ export const TASK_SORT_FIELDS = [
 export class ProjectListQueryDto extends IntersectionType(
   PaginationQueryDto,
   SortQueryDto,
+  SearchQueryDto,
 ) {
   @IsOptional()
   @IsIn(PROJECT_SORT_FIELDS)
@@ -29,6 +31,7 @@ export class ProjectListQueryDto extends IntersectionType(
 export class ProjectMembersListQueryDto extends IntersectionType(
   PaginationQueryDto,
   SortQueryDto,
+  SearchQueryDto,
 ) {
   @IsOptional()
   @IsIn(PROJECT_MEMBERS_SORT_FIELDS)
@@ -38,6 +41,7 @@ export class ProjectMembersListQueryDto extends IntersectionType(
 export class TaskListQueryDto extends IntersectionType(
   PaginationQueryDto,
   SortQueryDto,
+  SearchQueryDto,
 ) {
   @IsOptional()
   @IsIn(TASK_SORT_FIELDS)

@@ -50,8 +50,15 @@ export class TasksController {
   @Get(':taskId/comments')
   getComments(
     @Param('taskId', ParseUUIDPipe) taskId: string,
-    @Query() { page, limit, sortBy, order }: CommentListQueryDto,
+    @Query() { page, limit, sortBy, order, search }: CommentListQueryDto,
   ) {
-    return this.tasksService.getComments(taskId, page, limit, sortBy, order);
+    return this.tasksService.getComments(
+      taskId,
+      page,
+      limit,
+      sortBy,
+      order,
+      search,
+    );
   }
 }

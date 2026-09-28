@@ -12,7 +12,7 @@ import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Priority, Prisma, Status } from '../generated/prisma/client.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
-import { paginate } from '../common/helper.js';
+import { ilike, paginate } from '../common/helper.js';
 import {
   PROJECT_MEMBERS_SORT_FIELDS,
   PROJECT_SORT_FIELDS,
@@ -58,14 +58,21 @@ export class ProjectsService {
     limit: number,
     sortBy: (typeof PROJECT_SORT_FIELDS)[number],
     order: Prisma.SortOrder,
+    search?: string,
   ) {
+    const where: Prisma.ProjectWhereInput = {
+      ...(search && {
+        OR: [{ name: ilike(search) }, { description: ilike(search) }],
+      }),
+    };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.project.findMany({
+        where,
         orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.project.count(),
+      this.prisma.project.count({ where }),
     ]);
 
     return paginate(data, total, page, limit);
@@ -119,6 +126,7 @@ export class ProjectsService {
     limit: number,
     sortBy: (typeof PROJECT_MEMBERS_SORT_FIELDS)[number],
     order: Prisma.SortOrder,
+    search?: string,
   ) {
     await this.assertProjectExists(projectId);
 
@@ -126,7 +134,15 @@ export class ProjectsService {
       sortBy === 'createdAt'
         ? { createdAt: order }
         : { user: { [sortBy]: order } };
-    const where = { projectId };
+
+    const where: Prisma.ProjectMemberWhereInput = {
+      projectId,
+      ...(search && {
+        user: {
+          OR: [{ name: ilike(search) }, { email: ilike(search) }],
+        },
+      }),
+    };
 
     const [data, total] = await this.prisma.$transaction([
       this.prisma.projectMember.findMany({
@@ -181,12 +197,20 @@ export class ProjectsService {
     limit: number,
     sortBy: (typeof TASK_SORT_FIELDS)[number],
     order: Prisma.SortOrder,
+    search?: string,
     status?: Status,
     priority?: Priority,
   ) {
     await this.assertProjectExists(projectId);
 
-    const where = { projectId, status, priority };
+    const where: Prisma.TaskWhereInput = {
+      projectId,
+      status,
+      priority,
+      ...(search && {
+        OR: [{ title: ilike(search) }, { description: ilike(search) }],
+      }),
+    };
     const [data, total] = await this.prisma.$transaction([
       this.prisma.task.findMany({
         where,
