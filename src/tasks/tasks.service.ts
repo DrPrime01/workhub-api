@@ -6,6 +6,7 @@ import {
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
 
 @Injectable()
 export class TasksService {
@@ -14,7 +15,6 @@ export class TasksService {
   private handleError(e: unknown): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
       if (e.code === 'P2025') throw new NotFoundException('Task not found');
-      if (e.code === 'P2003') throw new NotFoundException('Assignee not found');
     }
     throw e;
   }
@@ -54,5 +54,33 @@ export class TasksService {
     } catch (error) {
       this.handleError(error);
     }
+  }
+
+  // Comments CR
+
+  async addComment(taskId: string, data: CreateCommentDto) {
+    const task = await this.findOne(taskId);
+
+    // Only project members can comment on a task
+
+    const member = await this.prisma.projectMember.findUnique({
+      where: {
+        projectId_userId: { projectId: task.projectId, userId: data.authorId },
+      },
+    });
+    if (!member)
+      throw new BadRequestException('Only project members can comment');
+
+    return await this.prisma.comment.create({ data: { ...data, taskId } });
+  }
+
+  async getComments(taskId: string) {
+    await this.findOne(taskId);
+
+    return await this.prisma.comment.findMany({
+      where: { taskId },
+      orderBy: { createdAt: 'desc' },
+      include: { author: { select: { id: true, name: true, email: true } } },
+    });
   }
 }
