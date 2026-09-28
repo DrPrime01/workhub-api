@@ -10,8 +10,9 @@ import {
 } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Prisma } from '../generated/prisma/client.js';
+import { Priority, Prisma, Status } from '../generated/prisma/client.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
+import { paginate } from '../common/helper.js';
 
 @Injectable()
 export class ProjectsService {
@@ -47,8 +48,17 @@ export class ProjectsService {
     }
   }
 
-  findAll() {
-    return this.prisma.project.findMany({ orderBy: { createdAt: 'desc' } });
+  async findAll(page: number, limit: number) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.project.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.project.count(),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async findOne(id: string) {
@@ -93,14 +103,22 @@ export class ProjectsService {
     }
   }
 
-  async listProjectMembers(projectId: string) {
+  async listProjectMembers(projectId: string, page: number, limit: number) {
     await this.assertProjectExists(projectId);
 
-    return await this.prisma.projectMember.findMany({
-      where: { projectId },
-      orderBy: { createdAt: 'desc' },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    });
+    const where = { projectId };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.projectMember.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: { user: { select: { id: true, name: true, email: true } } },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.projectMember.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async removeProjectMember(projectId: string, userId: string) {
@@ -136,15 +154,29 @@ export class ProjectsService {
     return await this.prisma.task.create({ data: { ...data, projectId } });
   }
 
-  async getTasks(projectId: string) {
+  async getTasks(
+    projectId: string,
+    page: number,
+    limit: number,
+    status?: Status,
+    priority?: Priority,
+  ) {
     await this.assertProjectExists(projectId);
 
-    return this.prisma.task.findMany({
-      where: { projectId },
-      orderBy: { createdAt: 'desc' },
-      include: {
-        assignee: { select: { id: true, email: true, name: true } },
-      },
-    });
+    const where = { projectId, status, priority };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.task.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          assignee: { select: { id: true, email: true, name: true } },
+        },
+      }),
+      this.prisma.task.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 }

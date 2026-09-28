@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service.js';
 import { CreateUserDto } from './dto/create-user-dto.js';
 import { UpdateUserDto } from './dto/update-user-dto.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { paginate } from '../common/helper.js';
 
 @Injectable()
 export class UsersService {
@@ -21,13 +22,21 @@ export class UsersService {
     throw e;
   }
 
-  getAll() {
-    return this.prisma.user.findMany({ orderBy: { createdAt: 'desc' } });
+  async getAll(page: number, limit: number) {
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.user.findMany({
+        orderBy: { createdAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.user.count(),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 
   async getOne(id: string) {
     const user = await this.prisma.user.findUnique({ where: { id } });
-
     if (!user) throw new NotFoundException(`User not found`);
 
     return user;

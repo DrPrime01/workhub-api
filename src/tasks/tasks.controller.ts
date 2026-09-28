@@ -4,6 +4,7 @@ import {
   Body,
   Patch,
   Param,
+  Query,
   Delete,
   ParseUUIDPipe,
   HttpCode,
@@ -13,6 +14,7 @@ import {
 import { TasksService } from './tasks.service.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
 @Controller('tasks')
 export class TasksController {
@@ -46,7 +48,10 @@ export class TasksController {
   }
 
   @Get(':taskId/comments')
-  getComments(@Param('taskId', ParseUUIDPipe) taskId: string) {
-    return this.tasksService.getComments(taskId);
+  getComments(
+    @Param('taskId', ParseUUIDPipe) taskId: string,
+    @Query() { page, limit }: PaginationQueryDto,
+  ) {
+    return this.tasksService.getComments(taskId, page, limit);
   }
 }

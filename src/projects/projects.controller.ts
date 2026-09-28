@@ -9,6 +9,8 @@ import {
   HttpCode,
   HttpStatus,
   ParseUUIDPipe,
+  Query,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service.js';
 import {
@@ -17,6 +19,8 @@ import {
 } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
+import { Priority, Status } from '../generated/prisma/enums.js';
+import { PaginationQueryDto } from '../common/dto/pagination-query.dto.js';
 
 @Controller('projects')
 export class ProjectsController {
@@ -29,8 +33,8 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll() {
-    return this.projectsService.findAll();
+  findAll(@Query() { page, limit }: PaginationQueryDto) {
+    return this.projectsService.findAll(page, limit);
   }
 
   @Get(':id')
@@ -55,8 +59,11 @@ export class ProjectsController {
   // Project members CRUD
 
   @Get(':projectId/members')
-  listProjectMembers(@Param('projectId', ParseUUIDPipe) projectId: string) {
-    return this.projectsService.listProjectMembers(projectId);
+  listProjectMembers(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query() { page, limit }: PaginationQueryDto,
+  ) {
+    return this.projectsService.listProjectMembers(projectId, page, limit);
   }
 
   @Post(':projectId/members')
@@ -86,7 +93,20 @@ export class ProjectsController {
   }
 
   @Get(':projectId/tasks')
-  getTasks(@Param('projectId', ParseUUIDPipe) projectId: string) {
-    return this.projectsService.getTasks(projectId);
+  getTasks(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Query() { page, limit }: PaginationQueryDto,
+    @Query('status', new ParseEnumPipe(Status, { optional: true }))
+    status?: Status,
+    @Query('priority', new ParseEnumPipe(Priority, { optional: true }))
+    priority?: Priority,
+  ) {
+    return this.projectsService.getTasks(
+      projectId,
+      page,
+      limit,
+      status,
+      priority,
+    );
   }
 }

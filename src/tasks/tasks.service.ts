@@ -7,6 +7,7 @@ import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
+import { paginate } from '../common/helper.js';
 
 @Injectable()
 export class TasksService {
@@ -74,13 +75,21 @@ export class TasksService {
     return await this.prisma.comment.create({ data: { ...data, taskId } });
   }
 
-  async getComments(taskId: string) {
+  async getComments(taskId: string, page: number, limit: number) {
     await this.findOne(taskId);
 
-    return await this.prisma.comment.findMany({
-      where: { taskId },
-      orderBy: { createdAt: 'desc' },
-      include: { author: { select: { id: true, name: true, email: true } } },
-    });
+    const where = { taskId };
+    const [data, total] = await this.prisma.$transaction([
+      this.prisma.comment.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        include: { author: { select: { id: true, name: true, email: true } } },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      this.prisma.comment.count({ where }),
+    ]);
+
+    return paginate(data, total, page, limit);
   }
 }
