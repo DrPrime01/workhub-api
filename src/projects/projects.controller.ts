@@ -16,6 +16,7 @@ import {
   AddProjectMemberDto,
 } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
+import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
 
 @Controller('projects')
 export class ProjectsController {
@@ -23,8 +24,8 @@ export class ProjectsController {
 
   // Project CRUD
   @Post()
-  create(@Body() createProjectDto: CreateProjectDto) {
-    return this.projectsService.create(createProjectDto);
+  create(@Body() payload: CreateProjectDto) {
+    return this.projectsService.create(payload);
   }
 
   @Get()
@@ -61,12 +62,9 @@ export class ProjectsController {
   @Post(':projectId/members')
   addProjectMember(
     @Param('projectId', ParseUUIDPipe) projectId: string,
-    @Body() createProjectMembersDto: AddProjectMemberDto,
+    @Body() payload: AddProjectMemberDto,
   ) {
-    return this.projectsService.addProjectMember(
-      projectId,
-      createProjectMembersDto,
-    );
+    return this.projectsService.addProjectMember(projectId, payload);
   }
 
   @Delete(':projectId/members/:userId')
@@ -76,5 +74,19 @@ export class ProjectsController {
     @Param('userId', ParseUUIDPipe) userId: string,
   ) {
     return this.projectsService.removeProjectMember(projectId, userId);
+  }
+
+  // Tasks CR
+  @Post(':projectId/tasks')
+  createTask(
+    @Param('projectId', ParseUUIDPipe) projectId: string,
+    @Body() payload: CreateTaskDto,
+  ) {
+    return this.projectsService.createTask(projectId, payload);
+  }
+
+  @Get(':projectId/tasks')
+  getTasks(@Param('projectId', ParseUUIDPipe) projectId: string) {
+    return this.projectsService.getTasks(projectId);
   }
 }

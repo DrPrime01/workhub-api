@@ -1,46 +1,39 @@
 import {
-  IsDateString,
+  IsDate,
   IsEnum,
+  IsNotEmpty,
   IsOptional,
   IsString,
   IsUUID,
+  MaxLength,
 } from 'class-validator';
-
-export enum Status {
-  TODO = 'TODO',
-  IN_PROGRESS = 'IN_PROGRESS',
-  DONE = 'DONE',
-}
-
-export enum Priority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  URGENT = 'URGENT',
-}
+import { Type } from 'class-transformer';
+import { Priority, Status } from '../../generated/prisma/enums.js';
 
 export class CreateTaskDto {
   @IsString()
+  @IsNotEmpty()
+  @MaxLength(256)
   title: string;
 
   @IsString()
   @IsOptional()
-  description: string;
+  description?: string;
 
+  @IsOptional()
   @IsEnum(Status)
-  status: Status;
+  status?: Status;
 
+  @IsOptional()
   @IsEnum(Priority)
-  priority: Priority;
-
-  @IsUUID()
-  projectId: string;
+  priority?: Priority;
 
   @IsOptional()
   @IsUUID()
-  assigneeId: string;
+  assigneeId?: string;
 
   @IsOptional()
-  @IsDateString()
-  dueDate: string;
+  @Type(() => Date)
+  @IsDate()
+  dueDate?: Date;
 }

@@ -11,6 +11,7 @@ import {
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
+import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
 
 @Injectable()
 export class ProjectsService {
@@ -118,5 +119,32 @@ export class ProjectsService {
         throw new NotFoundException('User is not a member of this project');
       throw error;
     }
+  }
+
+  // Tasks CR
+  async createTask(projectId: string, data: CreateTaskDto) {
+    await this.assertProjectExists(projectId);
+
+    if (data.assigneeId) {
+      const assignee = await this.prisma.projectMember.findUnique({
+        where: { projectId_userId: { projectId, userId: data.assigneeId } },
+      });
+      if (!assignee)
+        throw new BadRequestException('Assignee must be a project member');
+    }
+
+    return await this.prisma.task.create({ data: { ...data, projectId } });
+  }
+
+  async getTasks(projectId: string) {
+    await this.assertProjectExists(projectId);
+
+    return this.prisma.task.findMany({
+      where: { projectId },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        assignee: { select: { id: true, email: true, name: true } },
+      },
+    });
   }
 }

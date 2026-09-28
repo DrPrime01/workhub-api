@@ -29,16 +29,16 @@ export class UsersController {
   }
 
   @Post()
-  create(@Body() createUserDto: CreateUserDto) {
-    return this.usersService.createOne(createUserDto);
+  create(@Body() payload: CreateUserDto) {
+    return this.usersService.createOne(payload);
   }
 
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
-    @Body() updateUserDto: UpdateUserDto,
+    @Body() payload: UpdateUserDto,
   ) {
-    return this.usersService.update(id, updateUserDto);
+    return this.usersService.update(id, payload);
   }
 
   @Delete(':id')
