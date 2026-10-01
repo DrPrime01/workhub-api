@@ -79,14 +79,23 @@ export class ProjectsService {
   }
 
   async findOne(id: string) {
-    const project = await this.prisma.project.findUnique({ where: { id } });
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        members: {
+          select: { user: { select: { name: true, email: true, id: true } } },
+        },
+      },
+    });
     if (!project) throw new NotFoundException('Project not found');
-    return project;
+    return { ...project, members: project.members.map((m) => m.user) };
   }
 
   async update(id: string, data: UpdateProjectDto) {
     try {
-      return await this.prisma.project.update({ where: { id }, data });
+      const project = await this.prisma.project.update({ where: { id }, data });
+      return { data: project };
     } catch (error) {
       this.handleError(error);
     }

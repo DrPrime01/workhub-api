@@ -8,11 +8,9 @@ import {
   Param,
   ParseUUIDPipe,
   Patch,
-  Post,
   Query,
 } from '@nestjs/common';
 import { UsersService } from './users.service.js';
-import { CreateUserDto } from './dto/create-user-dto.js';
 import { UpdateUserDto } from './dto/update-user-dto.js';
 import { UserListQueryDto } from './dto/user-list-query.dto.js';
 
@@ -28,11 +26,6 @@ export class UsersController {
   @Get(':id')
   getOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.usersService.getOne(id);
-  }
-
-  @Post()
-  create(@Body() payload: CreateUserDto) {
-    return this.usersService.createOne(payload);
   }
 
   @Patch(':id')
