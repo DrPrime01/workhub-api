@@ -4,7 +4,6 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { CreateUserDto } from './dto/create-user-dto.js';
 import { UpdateUserDto } from './dto/update-user-dto.js';
 import { Prisma } from '../generated/prisma/client.js';
 import { ilike, paginate } from '../common/helper.js';
@@ -12,7 +11,7 @@ import { USER_SORT_FIELDS } from './dto/user-list-query.dto.js';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(protected readonly prisma: PrismaService) {}
 
   private handleError(e: unknown): never {
     if (e instanceof Prisma.PrismaClientKnownRequestError) {
@@ -42,6 +41,9 @@ export class UsersService {
         orderBy: [{ [sortBy]: order }, { id: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
+        omit: {
+          passwordHash: true,
+        },
       }),
       this.prisma.user.count({ where }),
     ]);
@@ -50,17 +52,20 @@ export class UsersService {
   }
 
   async getOne(id: string) {
-    const user = await this.prisma.user.findUnique({ where: { id } });
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      omit: {
+        passwordHash: true,
+      },
+    });
     if (!user) throw new NotFoundException(`User not found`);
 
     return user;
   }
 
-  async createOne(data: CreateUserDto) {
+  async create(data: Prisma.UserCreateInput) {
     try {
-      return await this.prisma.user.create({
-        data: { name: data.name, email: data.email.toLowerCase() },
-      });
+      return await this.prisma.user.create({ data });
     } catch (error) {
       this.handleError(error);
     }
@@ -71,6 +76,9 @@ export class UsersService {
       return await this.prisma.user.update({
         where: { id },
         data: body,
+        omit: {
+          passwordHash: true,
+        },
       });
     } catch (error) {
       this.handleError(error);

@@ -22,22 +22,35 @@ enum Priority {
   URGENT
 }
 
+enum UserRole {
+  ADMIN
+  USER
+}
+
+enum ProjectRole {
+  OWNER
+  MEMBER
+}
+
 model User {
   id            String      @id @default(uuid())
   email         String      @unique @db.VarChar(256)
-  name          String?     @db.VarChar(256)
+  name          String      @db.VarChar(256)
+  passwordHash  String      
+  role          UserRole    @default(USER)
+  sessions      Session[]
   projects      Project[]
   memberships   ProjectMember[]
   assignedTasks Task[]
   comments      Comment[]
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Project {
   id            String    @id @default(uuid())
   name          String    @db.VarChar(256)
-  description   String?    @db.Text
+  description   String?   @db.Text
   ownerId       String
   owner         User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   members       ProjectMember[]
@@ -53,6 +66,7 @@ model ProjectMember {
   project       Project       @relation(fields: [projectId], references: [id], onDelete: Cascade)
   userId        String
   user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role          ProjectRole   @default(MEMBER)
   createdAt     DateTime      @default(now())
 
   @@id([projectId, userId])
@@ -90,4 +104,18 @@ model Comment {
 
   @@index([taskId])
   @@index([authorId])
+}
+
+model Session {
+  id          String          @id @default(uuid())
+  userId      String
+  user        User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash   String          @unique
+  expiresAt   DateTime
+  revokedAt   DateTime?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+
+  @@index([userId])
 }
