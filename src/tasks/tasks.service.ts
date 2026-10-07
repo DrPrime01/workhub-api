@@ -60,20 +60,22 @@ export class TasksService {
 
   // Comments CR
 
-  async addComment(taskId: string, data: CreateCommentDto) {
+  async addComment(taskId: string, userId: string, data: CreateCommentDto) {
     const task = await this.findOne(taskId);
 
     // Only project members can comment on a task
 
     const member = await this.prisma.projectMember.findUnique({
       where: {
-        projectId_userId: { projectId: task.projectId, userId: data.authorId },
+        projectId_userId: { projectId: task.projectId, userId },
       },
     });
     if (!member)
       throw new BadRequestException('Only project members can comment');
 
-    return await this.prisma.comment.create({ data: { ...data, taskId } });
+    return await this.prisma.comment.create({
+      data: { content: data.content, authorId: userId, taskId },
+    });
   }
 
   async getComments(

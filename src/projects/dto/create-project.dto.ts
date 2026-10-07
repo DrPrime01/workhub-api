@@ -15,9 +15,6 @@ export class CreateProjectDto {
   @IsString()
   @IsOptional()
   description?: string;
-
-  @IsUUID()
-  ownerId: string;
 }
 
 export class AddProjectMemberDto {

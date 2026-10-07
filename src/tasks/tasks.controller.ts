@@ -15,6 +15,7 @@ import { TasksService } from './tasks.service.js';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { CommentListQueryDto } from './dto/comment-list-query.dto.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
+import { CurrentUser } from '../common/decorators/current-user/current-user.decorator.js';
 
 @Controller('tasks')
 export class TasksController {
@@ -41,10 +42,11 @@ export class TasksController {
 
   @Post(':taskId/comments')
   addComment(
+    @CurrentUser() user: UserEntity,
     @Param('taskId', ParseUUIDPipe) taskId: string,
     @Body() payload: CreateCommentDto,
   ) {
-    return this.tasksService.addComment(taskId, payload);
+    return this.tasksService.addComment(taskId, user.id, payload);
   }
 
   @Get(':taskId/comments')

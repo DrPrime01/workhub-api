@@ -10,7 +10,12 @@ import {
 } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Priority, Prisma, Status } from '../generated/prisma/client.js';
+import {
+  Priority,
+  Prisma,
+  ProjectRole,
+  Status,
+} from '../generated/prisma/client.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
 import { ilike, paginate } from '../common/helper.js';
 import {
@@ -43,10 +48,16 @@ export class ProjectsService {
   }
 
   // Project CRUD
-  async create(data: CreateProjectDto) {
+  async create(userId: string, data: CreateProjectDto) {
     try {
       return await this.prisma.project.create({
-        data: { ...data, members: { create: { userId: data.ownerId } } },
+        data: {
+          ...data,
+          ownerId: userId,
+          members: {
+            create: { userId, role: ProjectRole.OWNER },
+          },
+        },
       });
     } catch (error) {
       this.handleError(error);

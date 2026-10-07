@@ -11,6 +11,7 @@ import {
   ParseUUIDPipe,
   Query,
   ParseEnumPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { ProjectsService } from './projects.service.js';
 import {
@@ -19,12 +20,15 @@ import {
 } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
-import { Priority, Status } from '../generated/prisma/enums.js';
+import { Priority, ProjectRole, Status } from '../generated/prisma/enums.js';
 import {
   ProjectListQueryDto,
   ProjectMembersListQueryDto,
   TaskListQueryDto,
 } from './dto/project-list-query.dto.js';
+import { ProjectRolesGuard } from '../common/guards/project-roles/project-roles.guard.js';
+import { ProjectRoles } from '../common/decorators/project-roles/project-roles.decorator.js';
+import { CurrentUser } from '../common/decorators/current-user/current-user.decorator.js';
 
 @Controller('projects')
 export class ProjectsController {
@@ -32,8 +36,8 @@ export class ProjectsController {
 
   // Project CRUD
   @Post()
-  create(@Body() payload: CreateProjectDto) {
-    return this.projectsService.create(payload);
+  create(@CurrentUser() user: UserEntity, @Body() payload: CreateProjectDto) {
+    return this.projectsService.create(user.id, payload);
   }
 
   @Get()
@@ -48,6 +52,8 @@ export class ProjectsController {
     return this.projectsService.findOne(id);
   }
 
+  @ProjectRoles([ProjectRole.OWNER])
+  @UseGuards(ProjectRolesGuard)
   @Patch(':id')
   update(
     @Param('id', ParseUUIDPipe) id: string,
@@ -56,6 +62,8 @@ export class ProjectsController {
     return this.projectsService.update(id, updateProjectDto);
   }
 
+  @ProjectRoles([ProjectRole.OWNER])
+  @UseGuards(ProjectRolesGuard)
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   remove(@Param('id', ParseUUIDPipe) id: string) {
@@ -79,6 +87,8 @@ export class ProjectsController {
     );
   }
 
+  @ProjectRoles([ProjectRole.OWNER])
+  @UseGuards(ProjectRolesGuard)
   @Post(':projectId/members')
   addProjectMember(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -87,6 +97,8 @@ export class ProjectsController {
     return this.projectsService.addProjectMember(projectId, payload);
   }
 
+  @ProjectRoles([ProjectRole.OWNER])
+  @UseGuards(ProjectRolesGuard)
   @Delete(':projectId/members/:userId')
   @HttpCode(HttpStatus.NO_CONTENT)
   removeProjectMember(

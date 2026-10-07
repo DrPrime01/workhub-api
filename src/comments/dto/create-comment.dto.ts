@@ -5,7 +5,4 @@ export class CreateCommentDto {
   @MaxLength(2000)
   @IsNotEmpty()
   content: string;
-
-  @IsUUID()
-  authorId: string;
 }

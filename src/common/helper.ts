@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'crypto';
-import { Prisma } from '../generated/prisma/client.js';
+import { Prisma, UserRole } from '../generated/prisma/client.js';
 
 export const paginate = <T>(
   data: T[],
@@ -25,4 +25,9 @@ export const generateRefreshTokenAndHash = () => {
   const tokenHash = hashToken(refreshToken);
 
   return { refreshToken, tokenHash };
+};
+
+export const matchRoles = (roles: UserRole[], role: UserRole) => {
+  if (roles.includes(role)) return true;
+  return false;
 };
