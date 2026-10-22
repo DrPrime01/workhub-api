@@ -10,7 +10,12 @@ import {
 } from './dto/create-project.dto.js';
 import { UpdateProjectDto } from './dto/update-project.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Priority, Prisma, Status } from '../generated/prisma/client.js';
+import {
+  Priority,
+  Prisma,
+  ProjectRole,
+  Status,
+} from '../generated/prisma/client.js';
 import { CreateTaskDto } from '../tasks/dto/create-task.dto.js';
 import { ilike, paginate } from '../common/helper.js';
 import {
@@ -43,10 +48,16 @@ export class ProjectsService {
   }
 
   // Project CRUD
-  async create(data: CreateProjectDto) {
+  async create(userId: string, data: CreateProjectDto) {
     try {
       return await this.prisma.project.create({
-        data: { ...data, members: { create: { userId: data.ownerId } } },
+        data: {
+          ...data,
+          ownerId: userId,
+          members: {
+            create: { userId, role: ProjectRole.OWNER },
+          },
+        },
       });
     } catch (error) {
       this.handleError(error);
@@ -54,6 +65,7 @@ export class ProjectsService {
   }
 
   async findAll(
+    userId: string,
     page: number,
     limit: number,
     sortBy: (typeof PROJECT_SORT_FIELDS)[number],
@@ -61,6 +73,7 @@ export class ProjectsService {
     search?: string,
   ) {
     const where: Prisma.ProjectWhereInput = {
+      members: { some: { userId } },
       ...(search && {
         OR: [{ name: ilike(search) }, { description: ilike(search) }],
       }),
@@ -79,14 +92,23 @@ export class ProjectsService {
   }
 
   async findOne(id: string) {
-    const project = await this.prisma.project.findUnique({ where: { id } });
+    const project = await this.prisma.project.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { id: true, name: true, email: true } },
+        members: {
+          select: { user: { select: { name: true, email: true, id: true } } },
+        },
+      },
+    });
     if (!project) throw new NotFoundException('Project not found');
-    return project;
+    return { ...project, members: project.members.map((m) => m.user) };
   }
 
   async update(id: string, data: UpdateProjectDto) {
     try {
-      return await this.prisma.project.update({ where: { id }, data });
+      const project = await this.prisma.project.update({ where: { id }, data });
+      return { data: project };
     } catch (error) {
       this.handleError(error);
     }

@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { UpdateCommentDto } from './dto/update-comment.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { Prisma } from '../generated/prisma/client.js';
@@ -20,18 +24,20 @@ export class CommentsService {
     return comment;
   }
 
-  async update(id: string, data: UpdateCommentDto) {
-    // Check if the updater is a project member. Postpone until authorization phase
-
+  async update(userId: string, id: string, data: UpdateCommentDto) {
     try {
-      return await this.prisma.comment.update({ where: { id }, data });
+      const comment = await this.findOne(id);
+      if (comment.authorId !== userId) throw new ForbiddenException();
+      return this.prisma.comment.update({ where: { id }, data });
     } catch (error) {
       this.handleError(error);
     }
   }
 
-  async remove(id: string) {
+  async remove(userId: string, id: string) {
     try {
+      const comment = await this.findOne(id);
+      if (comment.authorId !== userId) throw new ForbiddenException();
       await this.prisma.comment.delete({ where: { id } });
     } catch (error) {
       this.handleError(error);

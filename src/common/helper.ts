@@ -1,4 +1,5 @@
-import { Prisma } from '../generated/prisma/client.js';
+import { createHash, randomBytes } from 'crypto';
+import { Prisma, UserRole } from '../generated/prisma/client.js';
 
 export const paginate = <T>(
   data: T[],
@@ -14,3 +15,19 @@ export const ilike = (search: string) => ({
   contains: search,
   mode: Prisma.QueryMode.insensitive,
 });
+
+export const hashToken = (token: string) => {
+  return createHash('sha256').update(token).digest('hex');
+};
+
+export const generateRefreshTokenAndHash = () => {
+  const refreshToken = randomBytes(32).toString('base64url');
+  const tokenHash = hashToken(refreshToken);
+
+  return { refreshToken, tokenHash };
+};
+
+export const matchRoles = (roles: UserRole[], role: UserRole) => {
+  if (roles.includes(role)) return true;
+  return false;
+};

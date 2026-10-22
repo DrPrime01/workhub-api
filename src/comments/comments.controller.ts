@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { CommentsService } from './comments.service.js';
 import { UpdateCommentDto } from './dto/update-comment.dto.js';
+import { CurrentUser } from '../common/decorators/current-user/current-user.decorator.js';
 
 @Controller('comments')
 export class CommentsController {
@@ -23,15 +24,19 @@ export class CommentsController {
 
   @Patch(':id')
   update(
+    @CurrentUser() user: UserEntity,
     @Param('id', ParseUUIDPipe) id: string,
     @Body() payload: UpdateCommentDto,
   ) {
-    return this.commentsService.update(id, payload);
+    return this.commentsService.update(user.id, id, payload);
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  remove(@Param('id', ParseUUIDPipe) id: string) {
-    return this.commentsService.remove(id);
+  remove(
+    @CurrentUser() user: UserEntity,
+    @Param('id', ParseUUIDPipe) id: string,
+  ) {
+    return this.commentsService.remove(user.id, id);
   }
 }

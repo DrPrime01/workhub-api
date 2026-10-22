@@ -1,11 +1,12 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 import { UpdateTaskDto } from './dto/update-task.dto.js';
 import { PrismaService } from '../prisma/prisma.service.js';
-import { Prisma } from '../generated/prisma/client.js';
+import { Prisma, ProjectRole } from '../generated/prisma/client.js';
 import { CreateCommentDto } from '../comments/dto/create-comment.dto.js';
 import { ilike, paginate } from '../common/helper.js';
 import { COMMENT_SORT_FIELDS } from './dto/comment-list-query.dto.js';
@@ -21,36 +22,57 @@ export class TasksService {
     throw e;
   }
 
-  async findOne(id: string) {
+  async findOne(userId: string, id: string) {
     const task = await this.prisma.task.findUnique({ where: { id } });
     if (!task) throw new NotFoundException('Task not found');
+
+    const member = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: task.projectId, userId } },
+    });
+    if (!member) throw new ForbiddenException();
     return task;
   }
 
-  async update(id: string, data: UpdateTaskDto) {
-    if (data.assigneeId) {
-      const task = await this.findOne(id);
-      const member = await this.prisma.projectMember.findUnique({
-        where: {
-          projectId_userId: {
-            projectId: task.projectId,
-            userId: data.assigneeId,
+  async update(userId: string, id: string, data: UpdateTaskDto) {
+    const task = await this.findOne(userId, id); // 404 / 403
+    const member = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: task.projectId, userId } },
+    });
+    const isOwner = member!.role === ProjectRole.OWNER;
+    const isAssignee = task.assigneeId === userId;
+
+    if (data.assigneeId !== undefined) {
+      if (!isOwner)
+        throw new ForbiddenException('Only the owner can assign tasks');
+      if (data.assigneeId) {
+        const assignee = await this.prisma.projectMember.findUnique({
+          where: {
+            projectId_userId: {
+              projectId: task.projectId,
+              userId: data.assigneeId,
+            },
           },
-        },
-      });
-
-      if (!member)
-        throw new BadRequestException('Assignee must be a project member');
+        });
+        if (!assignee)
+          throw new BadRequestException('Assignee must be a project member');
+      }
     }
 
-    try {
-      return await this.prisma.task.update({ where: { id }, data });
-    } catch (error) {
-      this.handleError(error);
-    }
+    if (data.status && !isOwner && !isAssignee)
+      throw new ForbiddenException(
+        'Only the owner or assignee can update status',
+      );
+
+    return this.prisma.task.update({ where: { id }, data });
   }
 
-  async remove(id: string) {
+  async remove(userId: string, id: string) {
+    const task = await this.findOne(userId, id); // 404 / 403
+    const member = await this.prisma.projectMember.findUnique({
+      where: { projectId_userId: { projectId: task.projectId, userId } },
+    });
+    const isOwner = member!.role === ProjectRole.OWNER;
+    if (!isOwner) throw new ForbiddenException();
     try {
       await this.prisma.task.delete({ where: { id } });
     } catch (error) {
@@ -60,23 +82,16 @@ export class TasksService {
 
   // Comments CR
 
-  async addComment(taskId: string, data: CreateCommentDto) {
-    const task = await this.findOne(taskId);
+  async addComment(taskId: string, userId: string, data: CreateCommentDto) {
+    await this.findOne(userId, taskId);
 
-    // Only project members can comment on a task
-
-    const member = await this.prisma.projectMember.findUnique({
-      where: {
-        projectId_userId: { projectId: task.projectId, userId: data.authorId },
-      },
+    return await this.prisma.comment.create({
+      data: { content: data.content, authorId: userId, taskId },
     });
-    if (!member)
-      throw new BadRequestException('Only project members can comment');
-
-    return await this.prisma.comment.create({ data: { ...data, taskId } });
   }
 
   async getComments(
+    userId: string,
     taskId: string,
     page: number,
     limit: number,
@@ -84,7 +99,7 @@ export class TasksService {
     order: Prisma.SortOrder,
     search?: string,
   ) {
-    await this.findOne(taskId);
+    await this.findOne(userId, taskId);
 
     const where: Prisma.CommentWhereInput = {
       taskId,
