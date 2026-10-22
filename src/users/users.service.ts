@@ -2,10 +2,12 @@ import {
   Injectable,
   NotFoundException,
   ConflictException,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service.js';
 import { UpdateUserDto } from './dto/update-user-dto.js';
-import { Prisma } from '../generated/prisma/client.js';
+import { Prisma, UserRole } from '../generated/prisma/client.js';
 import { ilike, paginate } from '../common/helper.js';
 import { USER_SORT_FIELDS } from './dto/user-list-query.dto.js';
 
@@ -71,8 +73,12 @@ export class UsersService {
     }
   }
 
-  async update(id: string, body: UpdateUserDto) {
+  async update(userId: string, id: string, body: UpdateUserDto) {
     try {
+      const user = await this.getOne(userId);
+      if (user.role !== UserRole.ADMIN && userId !== id)
+        throw new ForbiddenException();
+
       return await this.prisma.user.update({
         where: { id },
         data: body,
@@ -85,8 +91,12 @@ export class UsersService {
     }
   }
 
-  async delete(id: string) {
+  async delete(userId: string, id: string) {
     try {
+      const user = await this.getOne(userId);
+      if (user.role !== UserRole.ADMIN && userId !== id)
+        throw new ForbiddenException();
+
       await this.prisma.user.delete({ where: { id } });
     } catch (error) {
       this.handleError(error);

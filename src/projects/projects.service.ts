@@ -65,6 +65,7 @@ export class ProjectsService {
   }
 
   async findAll(
+    userId: string,
     page: number,
     limit: number,
     sortBy: (typeof PROJECT_SORT_FIELDS)[number],
@@ -72,6 +73,7 @@ export class ProjectsService {
     search?: string,
   ) {
     const where: Prisma.ProjectWhereInput = {
+      members: { some: { userId } },
       ...(search && {
         OR: [{ name: ilike(search) }, { description: ilike(search) }],
       }),

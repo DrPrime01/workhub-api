@@ -42,11 +42,21 @@ export class ProjectsController {
 
   @Get()
   findAll(
+    @CurrentUser() user: UserEntity,
     @Query() { page, limit, sortBy, order, search }: ProjectListQueryDto,
   ) {
-    return this.projectsService.findAll(page, limit, sortBy, order, search);
+    return this.projectsService.findAll(
+      user.id,
+      page,
+      limit,
+      sortBy,
+      order,
+      search,
+    );
   }
 
+  @ProjectRoles([ProjectRole.OWNER, ProjectRole.MEMBER])
+  @UseGuards(ProjectRolesGuard)
   @Get(':id')
   findOne(@Param('id', ParseUUIDPipe) id: string) {
     return this.projectsService.findOne(id);
@@ -72,6 +82,8 @@ export class ProjectsController {
 
   // Project members CRUD
 
+  @ProjectRoles([ProjectRole.OWNER, ProjectRole.MEMBER])
+  @UseGuards(ProjectRolesGuard)
   @Get(':projectId/members')
   listProjectMembers(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -109,6 +121,8 @@ export class ProjectsController {
   }
 
   // Tasks CR
+  @ProjectRoles([ProjectRole.OWNER, ProjectRole.MEMBER])
+  @UseGuards(ProjectRolesGuard)
   @Post(':projectId/tasks')
   createTask(
     @Param('projectId', ParseUUIDPipe) projectId: string,
@@ -117,6 +131,8 @@ export class ProjectsController {
     return this.projectsService.createTask(projectId, payload);
   }
 
+  @ProjectRoles([ProjectRole.OWNER, ProjectRole.MEMBER])
+  @UseGuards(ProjectRolesGuard)
   @Get(':projectId/tasks')
   getTasks(
     @Param('projectId', ParseUUIDPipe) projectId: string,
