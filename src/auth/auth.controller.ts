@@ -5,6 +5,7 @@ import { LoginAuthDto } from './dto/login-auth.dto.js';
 import { RefreshTokenDto } from './dto/refresh-token.dto.js';
 import { Public } from '../common/decorators/public/public.decorator.js';
 import { CurrentUser } from '../common/decorators/current-user/current-user.decorator.js';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -12,12 +13,14 @@ export class AuthController {
 
   @Post('register')
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   register(@Body() payload: RegisterAuthDto) {
     return this.authService.register(payload);
   }
 
   @Post('signin')
   @Public()
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   login(@Body() payload: LoginAuthDto) {
     return this.authService.login(payload);
   }

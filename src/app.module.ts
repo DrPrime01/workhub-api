@@ -14,6 +14,7 @@ import { AuthGuard } from './common/guards/auth/auth.guard.js';
 import { RolesGuard } from './common/guards/roles/roles.guard.js';
 import Joi from 'joi';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -38,6 +39,14 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         JWT_SECRET_KEY: Joi.string().min(32).required(),
       }),
     }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60_000,
+          limit: 100,
+        },
+      ],
+    }),
     PrismaModule,
     UsersModule,
     ProjectsModule,
@@ -51,6 +60,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}
