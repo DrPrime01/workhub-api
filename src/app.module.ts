@@ -12,6 +12,7 @@ import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './common/guards/auth/auth.guard.js';
 import { RolesGuard } from './common/guards/roles/roles.guard.js';
+import Joi from 'joi';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -24,7 +25,18 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
       appSecret: 'YOUR_APP_SECRET',
       serviceId: 'workhub-api',
     }),
-    ConfigModule.forRoot({ isGlobal: true, envFilePath: '.env' }),
+    ConfigModule.forRoot({
+      isGlobal: true,
+      envFilePath: '.env',
+      validationSchema: Joi.object({
+        NODE_ENV: Joi.string()
+          .valid('development', 'test', 'production')
+          .default('development'),
+        PORT: Joi.number().port().default(3000),
+        DATABASE_URL: Joi.string().required(),
+        JWT_SECRET_KEY: Joi.string().min(32).required(),
+      }),
+    }),
     PrismaModule,
     UsersModule,
     ProjectsModule,
