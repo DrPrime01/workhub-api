@@ -9,10 +9,11 @@ import { TasksModule } from './tasks/tasks.module.js';
 import { CommentsModule } from './comments/comments.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ConfigModule } from '@nestjs/config';
-import { APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './common/guards/auth/auth.guard.js';
 import { RolesGuard } from './common/guards/roles/roles.guard.js';
 import Joi from 'joi';
+import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -49,6 +50,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     AppService,
     { provide: APP_GUARD, useClass: AuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
+    { provide: APP_FILTER, useClass: AllExceptionsFilter },
   ],
 })
 export class AppModule {}
