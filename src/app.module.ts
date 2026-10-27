@@ -8,13 +8,17 @@ import { ProjectsModule } from './projects/projects.module.js';
 import { TasksModule } from './tasks/tasks.module.js';
 import { CommentsModule } from './comments/comments.module.js';
 import { AuthModule } from './auth/auth.module.js';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
 import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { AuthGuard } from './common/guards/auth/auth.guard.js';
 import { RolesGuard } from './common/guards/roles/roles.guard.js';
 import Joi from 'joi';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { Keyv } from 'keyv';
+import { createKeyv } from '@keyv/redis';
+import { KeyvCacheableMemory } from 'cacheable';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -37,6 +41,9 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
         PORT: Joi.number().port().default(3000),
         DATABASE_URL: Joi.string().required(),
         JWT_SECRET_KEY: Joi.string().min(32).required(),
+        REDIS_URL: Joi.string()
+          .uri({ scheme: ['redis', 'rediss'] })
+          .required(),
       }),
     }),
     ThrottlerModule.forRoot({
@@ -46,6 +53,19 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
           limit: 100,
         },
       ],
+    }),
+    CacheModule.registerAsync({
+      isGlobal: true,
+      inject: [ConfigService],
+      useFactory: (configService: ConfigService) => ({
+        stores: [
+          new Keyv({
+            store: new KeyvCacheableMemory({ ttl: 60_000, lruSize: 5_000 }),
+          }),
+          createKeyv(configService.getOrThrow<string>('REDIS_URL')),
+        ],
+        ttl: 30_000,
+      }),
     }),
     PrismaModule,
     UsersModule,
