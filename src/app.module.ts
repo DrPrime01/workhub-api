@@ -10,15 +10,16 @@ import { CommentsModule } from './comments/comments.module.js';
 import { AuthModule } from './auth/auth.module.js';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { AuthGuard } from './common/guards/auth/auth.guard.js';
 import { RolesGuard } from './common/guards/roles/roles.guard.js';
-import Joi from 'joi';
 import { AllExceptionsFilter } from './common/filters/all-exceptions.filter.js';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { Keyv } from 'keyv';
 import { createKeyv } from '@keyv/redis';
 import { KeyvCacheableMemory } from 'cacheable';
+import Joi from 'joi';
+import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -81,6 +82,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     { provide: APP_GUARD, useClass: RolesGuard },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_INTERCEPTOR, useClass: LoggingInterceptor },
   ],
 })
 export class AppModule {}
