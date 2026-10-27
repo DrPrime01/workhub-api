@@ -20,6 +20,7 @@ import { createKeyv } from '@keyv/redis';
 import { KeyvCacheableMemory } from 'cacheable';
 import Joi from 'joi';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor.js';
+import { HealthModule } from './health/health.module.js';
 
 export const { ObserveModule, ObserveInstrument } = createObserveModule();
 
@@ -74,6 +75,7 @@ export const { ObserveModule, ObserveInstrument } = createObserveModule();
     TasksModule,
     CommentsModule,
     AuthModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [

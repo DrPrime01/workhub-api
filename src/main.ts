@@ -8,6 +8,7 @@ async function bootstrap() {
     instrument: ObserveInstrument,
   });
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.enableShutdownHooks();
   await app.listen(process.env.PORT ?? 3000);
 }
 await bootstrap();
